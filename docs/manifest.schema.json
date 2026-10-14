@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/GerhardOfRivia/weer/manifest-v1",
+  "title": "Weer processor manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "identifier",
+        "sha256"
+      ]
+    },
+    "station": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]{3}$"
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -85,
+          "maximum": 85
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "altitude": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "latitude",
+        "longitude",
+        "altitude"
+      ]
+    },
+    "volume_time": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "sweep_time": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "field": {
+      "const": "reflectivity"
+    },
+    "units": {
+      "const": "dBZ"
+    },
+    "sweep_index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "elevation": {
+      "type": "number"
+    },
+    "available_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reflectivity_sweeps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "elevation": {
+            "type": "number"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "index",
+          "elevation",
+          "start",
+          "end"
+        ]
+      }
+    },
+    "has_valid_measurements": {
+      "type": "boolean"
+    },
+    "projection": {
+      "const": "EPSG:3857"
+    },
+    "extent": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number"
+      }
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 128,
+      "maximum": 2048
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 128,
+      "maximum": 2048
+    },
+    "pixel_orientation": {
+      "const": "row_0_north"
+    },
+    "image": {
+      "const": "image.png"
+    },
+    "color_scale": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "units": {
+          "const": "dBZ"
+        },
+        "thresholds": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#[a-fA-F0-9]{6}$"
+          }
+        }
+      },
+      "required": [
+        "units",
+        "thresholds",
+        "colors"
+      ]
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "processor_version": {
+      "type": "string"
+    },
+    "render_config_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "source",
+    "station",
+    "volume_time",
+    "sweep_time",
+    "field",
+    "units",
+    "sweep_index",
+    "elevation",
+    "available_fields",
+    "reflectivity_sweeps",
+    "has_valid_measurements",
+    "projection",
+    "extent",
+    "width",
+    "height",
+    "pixel_orientation",
+    "image",
+    "color_scale",
+    "processed_at",
+    "processor_version",
+    "render_config_sha256",
+    "warnings"
+  ]
+}

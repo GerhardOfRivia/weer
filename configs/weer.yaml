@@ -1,0 +1,29 @@
+listen: 127.0.0.1:8080
+data_dir: data
+database: data/weer.db
+web_dir: web/dist
+stations:
+  # NOAA NCEI station record; see docs/sources.md.
+  - id: KFTG
+    name: Denver Front Range Airport, CO
+    latitude: 39.786639
+    longitude: -104.545806
+bucket: unidata-nexrad-level2
+region: us-east-1
+poll_interval: 60s
+history: 2h
+retention: 6h
+stale_after: 15m
+download_concurrency: 1
+processing_concurrency: 1
+max_download_bytes: 104857600
+download_timeout: 2m
+max_attempts: 4
+python: .venv/bin/python
+processing_timeout: 3m
+render_size: 1024
+coverage_km: 230
+# OpenStreetMap background. Set both values to '' to disable external tiles.
+# Other providers can use an HTTPS XYZ URL with {z}/{x}/{y} and attribution.
+basemap_url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+basemap_attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

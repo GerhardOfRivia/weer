@@ -1,0 +1,13 @@
+# Architecture
+
+One Go process owns a SQLite database and local storage. Its read-only HTTP handlers never launch processing. Ingestion uses small in-process worker pools; Python is a time-limited subprocess, never a network service. SQLite's initial migration creates station, scan, frame, and migration tables and station/time/work indexes. WAL and a busy timeout support reads alongside workers. A data-directory advisory lock prevents competing service/import processes.
+
+Discovery lists every UTC day intersecting the configured recent window for each explicitly configured station. ListObjectsV2 continuation tokens are followed, including detection of malformed repeated tokens. Files are filtered by station/date/name/size and queued newest-first. Source key identity is unique across polls/restarts. Downloads use HTTP timeouts, conditional ETags, streamed size limits, header validation, file sync, and atomic rename.
+
+Lifecycle: `discovered → downloading → downloaded → processing → ready`. A failure returns to its retry stage with error, attempt count, and exponential backoff (30 seconds initially, capped at 64 minutes). Attempts are bounded per stage. Download success resets the processing attempt counter. At the retry limit, the item remains visibly failed until it expires or an operator repairs/reimports it. Errors do not remove earlier ready frames. Logs contain station, scan, and job fields.
+
+Restart resets interrupted transient states. Processing uses an unpublished temporary directory; the Go side validates the manifest, PNG, dimensions, station, fingerprint, times, and render identity before renaming and marking ready in SQLite. Frame IDs hash source SHA-256, field, actual original sweep index, processor version, and configuration fingerprint. Repeated GETs serve disk artifacts. Originals are retained separately; PNG colors are never decoded back into numerical data.
+
+Retention marks only inactive expired scans as deleting, removes their files and unreferenced frames, then deletes metadata. Interrupted deletion resumes next time. Startup removes abandoned temporary directories and complete orphan frame directories. Imported archives receive an import-relative retention deadline so old files can be inspected; automatic archives use nominal observation time. Neither policy changes their decoded observation timestamps.
+
+Frontend polling runs every 15 seconds. There is one OpenLayers map instance. New frames follow live mode, while historical selection remains stable. Image prefetch is limited to neighbors and the decoded-image cache holds at most 12 entries. Requests are aborted/ignored across station/frame changes. No external basemap is required.

@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "weer-processor"
+version = "0.1.0"
+requires-python = ">=3.12,<3.14"
+dependencies = ["arm-pyart==2.2.4", "numpy>=2.2,<3", "pyproj>=3.7,<4", "Pillow>=11,<13"]
+[project.scripts]
+weer-processor = "weer_processor.__main__:main"
+[tool.setuptools.packages.find]
+include = ["weer_processor*"]
