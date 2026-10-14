@@ -1,0 +1,10 @@
+Generated with the built-in image generation tool using /home/g/git/aarde/icon.png as a style reference.
+
+Use case: logo-brand
+Asset type: transparent PNG project mascot icon for Weer, a Go-powered weather radar viewer.
+Primary request: Create a gopher icon similar to the supplied aarde reference, adapted to weather radar.
+Input image: aarde icon is the visual style reference. Match its polished cartoon sticker illustration, thick black outlines, vivid cyan Go gopher, large friendly white eyes, two buck teeth, rich shading, and integrated lowercase nameplate.
+Subject: cheerful cyan gopher in a yellow raincoat and rain hat, holding a small screen displaying colorful weather radar echoes. Behind it, a compact white weather radar dome and a storm cloud with a little rain and lightning. Keep the character dominant and silhouette cohesive.
+Composition: square, centered complete badge with generous transparent margins, no cropping. Lower foreground dark navy rounded nameplate edged in cyan, subtly patterned with radar rings.
+Text (verbatim): "weer" in large readable lowercase letters on the nameplate, white to cyan coloring. No other text.
+Style: match the reference's expressive detailed illustrated mascot badge and clean professional finish, not photorealistic. Weather objects replace the reference's geography/catalog objects. True transparent background, no background rectangle, no watermark.

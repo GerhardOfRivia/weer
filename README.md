@@ -1,8 +1,10 @@
 # Weer
 
-Weer is a small, self-hosted U.S. NEXRAD radar viewer. A Go service downloads completed Level II volumes, stores metadata in SQLite, runs a bounded Python/Py-ART subprocess, and serves transparent reflectivity images on an OpenLayers map. React provides live updates and historical playback. Weer is standalone and has no dependency on Aarde.
+Weer is a small, self-hosted U.S. NEXRAD radar viewer. A Go service downloads completed Level II volumes, stores metadata in SQLite, runs a bounded Python/Py-ART subprocess, and serves transparent reflectivity images on an OpenLayers map. React provides live updates and historical playback.
 
 **Independent visualization of NOAA data.** Images are processed output, not original unaltered NOAA products. NOAA does not endorse Weer. This is not an official warning service and must not be the sole source for safety-critical decisions.
+
+![screenshot.png](screenshot.png)
 
 ## Run locally
 
@@ -64,3 +66,5 @@ The smoke test verifies SHA-256, imports two real observations, serves the API, 
 Limitations: reflectivity only, one selected station, selected-elevation sweep rather than a surface estimate or composite; no numeric pixel interrogation, mosaics, warning overlays, or authentication. Coverage crossing the antimeridian or reaching 85° latitude is rejected. Raster resolution and angular support can omit very narrow features; these are visualization products, not analysis-ready numerical grids.
 
 Application code is MIT licensed; the existing repository license is preserved. Scientific dependencies retain their own licenses.
+
+![icon.png](icon.png)
