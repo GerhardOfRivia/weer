@@ -68,3 +68,19 @@ Limitations: reflectivity only, one selected station, selected-elevation sweep r
 Application code is MIT licensed; the existing repository license is preserved. Scientific dependencies retain their own licenses.
 
 ![icon.png](icon.png)
+
+## Export an animated radar GIF
+
+Select a station, pan and zoom to the desired area, then click **Export GIF** beside the playback controls. Weer downloads a 1024-pixel-wide animation at 2 FPS, looping forever, with the current basemap, radar opacity, UTC sweep timestamps, and map attribution. The filename uses the station and latest exported observation time. All available ready frames are sorted by their actual sweep times; repeated frame IDs and consecutive identical radar images are omitted. Export requires at least two distinct radar frames and a loaded basemap. Radar imagery is included even if its viewer visibility checkbox is off.
+
+Progress and **Cancel export** appear during generation. The map and playback remain usable after the initial map capture; export keeps the captured viewport. If you move the map while it is still waiting for tiles, retry the export once the map settles. Exports exceeding 120 ready frames or a height of 2048 pixels are rejected rather than truncated. Resize very tall/narrow viewports to export. GIF's 256-color palette can slightly alter colors; radar alpha is composited against the map before encoding.
+
+The browser captures the existing basemap canvas once, including its dark-mode filter, without requesting extra tiles or using a proxy. Custom tile providers must permit anonymous CORS canvas access and provide attribution; their terms must permit exporting and sharing imagery. Tile failures, blocked canvas access, and missing attribution produce an error instead of a radar-only GIF. No basemap means export is disabled. The bundled OpenStreetMap attribution remains in every frame; its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) still applies.
+
+Browser regression tests use synthetic radar and map tiles, without contacting a map provider:
+
+```sh
+cd web
+pnpm exec playwright install chromium  # one-time browser installation
+pnpm test:e2e
+```

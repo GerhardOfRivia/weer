@@ -44,3 +44,5 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 *.part
+web/test-results/
+web/playwright-report/

@@ -7,6 +7,7 @@ import ImageStatic from "ol/source/ImageStatic";
 import TileLayer from "ol/layer/Tile";
 import XYZ from "ol/source/XYZ";
 import OSM from "ol/source/OSM";
+import type { TileSourceEvent } from "ol/source/Tile";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Feature from "ol/Feature";
@@ -15,6 +16,8 @@ import { Circle, Fill, Stroke, Style, Text } from "ol/style";
 import { fromLonLat } from "ol/proj";
 import { reconcile, step, type Scan } from "./playback";
 import { applyTheme, readTheme, saveTheme, type Theme } from "./theme";
+import { loadFrame, type Manifest } from "./radar-frame";
+import { exportGIF, exportFrames } from "./gif-export";
 import "ol/ol.css";
 import "./style.css";
 type Station = {
@@ -45,18 +48,6 @@ type Status = {
   basemap_url: string;
   basemap_attribution: string;
   max_attempts: number;
-};
-type Manifest = {
-  station: { id: string };
-  field: string;
-  units: string;
-  elevation: number;
-  sweep_time: { start: string; end: string };
-  volume_time: { start: string; end: string };
-  has_valid_measurements: boolean;
-  projection: string;
-  extent: number[];
-  color_scale: { thresholds: number[]; colors: string[] };
 };
 const query = new URLSearchParams(location.search);
 const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -91,6 +82,11 @@ function App() {
     [loading, setLoading] = useState(false),
     [manifest, setManifest] = useState<Manifest | null>(null),
     [now, setNow] = useState(Date.now());
+  const [exportProgress, setExportProgress] = useState("");
+  const [exportError, setExportError] = useState("");
+  const exporting = useRef<AbortController | null>(null);
+  const failedTiles = useRef(new Set<string>());
+  useEffect(() => () => exporting.current?.abort(), []);
   const element = useRef<HTMLDivElement>(null),
     map = useRef<Map | null>(null),
     radar = useRef(new ImageLayer({ opacity: 0.8 })),
@@ -149,17 +145,31 @@ function App() {
     };
   }, []);
   useEffect(() => {
+    failedTiles.current.clear();
     base.current.setSource(
       status?.basemap_url
-        ? status.basemap_url === "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        ? status.basemap_url ===
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           ? new OSM()
           : new XYZ({
               url: status.basemap_url,
+              crossOrigin: "anonymous",
               attributions: status.basemap_attribution,
               attributionsCollapsible: false,
             })
         : null,
     );
+    const source = base.current.getSource();
+    const failed = (event: TileSourceEvent) =>
+      failedTiles.current.add(event.tile.getKey());
+    const loaded = (event: TileSourceEvent) =>
+      failedTiles.current.delete(event.tile.getKey());
+    source?.on("tileloaderror", failed);
+    source?.on("tileloadend", loaded);
+    return () => {
+      source?.un("tileloaderror", failed);
+      source?.un("tileloadend", loaded);
+    };
   }, [status?.basemap_url, status?.basemap_attribution]);
   useEffect(() => {
     markers.current.clear();
@@ -183,12 +193,10 @@ function App() {
       markers.current.addFeature(f);
     }
     if (site)
-      map.current
-        ?.getView()
-        .animate({
-          center: fromLonLat([site.longitude, site.latitude]),
-          duration: 250,
-        });
+      map.current?.getView().animate({
+        center: fromLonLat([site.longitude, site.latitude]),
+        duration: 250,
+      });
   }, [stations, station]);
   useEffect(() => {
     if (!station) return;
@@ -202,7 +210,7 @@ function App() {
     setLoading(true);
     let polling = false;
     const poll = async () => {
-      if(polling) return;
+      if (polling) return;
       polling = true;
       try {
         const st = await get<Status>("/api/v1/status", controller.signal);
@@ -255,24 +263,8 @@ function App() {
       return;
     }
     setLoading(true);
-    async function load(s: Scan) {
-      const old = cache.current.get(s.frame_id);
-      if (old) return old;
-      const m = await get<Manifest>(
-        `/api/v1/frames/${s.frame_id}/manifest`,
-        controller.signal,
-      );
-      if (m.station.id !== station) throw Error("Station mismatch");
-      const img = new window.Image();
-      img.src = `/api/v1/frames/${s.frame_id}/image.png`;
-      await img.decode();
-      if (controller.signal.aborted) throw Error("Cancelled");
-      const entry = { image: img, manifest: m };
-      cache.current.set(s.frame_id, entry);
-      while (cache.current.size > 12)
-        cache.current.delete(cache.current.keys().next().value!);
-      return entry;
-    }
+    const load = (s: Scan) =>
+      loadFrame(s, station, cache.current, controller.signal);
     void load(current)
       .then(({ image, manifest: m }) => {
         if (!active || gen !== generation.current) return;
@@ -316,6 +308,37 @@ function App() {
     setLive(false);
     setSelected(id);
   };
+  const startExport = async () => {
+    if (exporting.current || !map.current) return;
+    const controller = new AbortController();
+    exporting.current = controller;
+    setExportError("");
+    try {
+      await exportGIF({
+        map: map.current,
+        scans: ready,
+        station,
+        opacity,
+        signal: controller.signal,
+        progress: setExportProgress,
+        tilesFailed: () => failedTiles.current.size > 0,
+        metadata: async (scan) =>
+          cache.current.get(scan.frame_id)?.manifest ??
+          (await get<Manifest>(
+            `/api/v1/frames/${scan.frame_id}/manifest`,
+            controller.signal,
+          )),
+        load: (scan, metadata) =>
+          loadFrame(scan, station, cache.current, controller.signal, metadata),
+      });
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setExportError(`Export failed: ${(error as Error).message}`);
+    } finally {
+      exporting.current = null;
+      setExportProgress("");
+    }
+  };
   return (
     <main>
       <header>
@@ -327,7 +350,9 @@ function App() {
           ◉ weer
         </button>
         <span className="subtitle">NEXRAD / REFLECTIVITY</span>
-        <span className={`badge ${stale || error || feed?.source_error || feed?.errors.length ? "warn" : ""}`}>
+        <span
+          className={`badge ${stale || error || feed?.source_error || feed?.errors.length ? "warn" : ""}`}
+        >
           {live ? "LIVE" : "HISTORY"} · {stale ? "FEED STALE" : "FEED CURRENT"}
           {(error || feed?.source_error || !!feed?.errors.length) && " · ERROR"}
         </span>
@@ -369,13 +394,11 @@ function App() {
           <button
             onClick={() =>
               site &&
-              map.current
-                ?.getView()
-                .animate({
-                  center: fromLonLat([site.longitude, site.latitude]),
-                  zoom: 7,
-                  duration: 300,
-                })
+              map.current?.getView().animate({
+                center: fromLonLat([site.longitude, site.latitude]),
+                zoom: 7,
+                duration: 300,
+              })
             }
           >
             ◎ Return to station
@@ -546,7 +569,32 @@ function App() {
             Live
           </button>
           <span>{ready.length} frames</span>
+          <button
+            disabled={
+              !!exportProgress ||
+              exportFrames(ready).length < 2 ||
+              !status?.basemap_url
+            }
+            onClick={() => void startExport()}
+          >
+            Export GIF
+          </button>
+          {exportProgress && (
+            <button onClick={() => exporting.current?.abort()}>
+              Cancel export
+            </button>
+          )}
         </div>
+        {exportProgress && (
+          <p className="export-message" role="status">
+            {exportProgress}
+          </p>
+        )}
+        {exportError && (
+          <p role="alert" className="export-message error">
+            {exportError}
+          </p>
+        )}
         <div className="times">
           <span>{ready[0]?.observation_time}</span>
           <span>{ready.at(-1)?.observation_time}</span>

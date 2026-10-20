@@ -316,3 +316,13 @@ input:focus-visible {
     font-size: 8px;
   }
 }
+.export-message {
+  position: absolute;
+  bottom: 100%;
+  right: 20px;
+  max-width: min(560px, calc(100vw - 40px));
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
